@@ -24,10 +24,31 @@ from simweaver.adapters.pybullet_exporter import generate_pybullet_script
 from simweaver.simulation.environments import get_preset_environment
 
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Keeps the server hot on free-tier cloud platforms by pinging /api/health every 10 minutes."""
+    external_url = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("KEEP_ALIVE_URL")
+    if external_url:
+        async def keep_alive_worker():
+            import urllib.request
+            ping_target = f"{external_url.rstrip('/')}/api/health"
+            while True:
+                await asyncio.sleep(600)
+                try:
+                    await asyncio.to_thread(urllib.request.urlopen, ping_target, timeout=10)
+                except Exception:
+                    pass
+        asyncio.create_task(keep_alive_worker())
+    yield
+
+
 app = FastAPI(
     title="SimWeaver API",
     description="Agentic Robotics Simulation Engineer API",
-    version="0.1.0"
+    version="0.1.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(

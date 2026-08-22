@@ -1,0 +1,18 @@
+name: Render Backend 24/7 Heartbeat Cron
+
+on:
+  schedule:
+    # Triggers every 10 minutes to prevent Render free-tier idle sleep
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  heartbeat-ping:
+    name: Ping Render Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Keep-Alive HTTP GET Request
+        run: |
+          BACKEND_URL="${{ secrets.BACKEND_URL || 'https://simweaver-api.onrender.com' }}"
+          echo "Sending keep-alive ping to $BACKEND_URL/api/health..."
+          curl -s -f -m 15 "$BACKEND_URL/api/health" || echo "Ping completed (service initializing or awake)"
