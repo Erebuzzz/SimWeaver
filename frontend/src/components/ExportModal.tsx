@@ -8,6 +8,7 @@ import {
   CheckSquareIcon 
 } from './icons/EngineeringIcons';
 import { EIRSpec, ExperimentRecord } from '../types';
+import { getApiUrl } from '../config';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -28,27 +29,27 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, eir, 
   useEffect(() => {
     if (!isOpen) return;
 
-    fetch('/api/export/ros2')
+    fetch(getApiUrl('/api/export/ros2'))
       .then((res) => res.json())
       .then((data) => setRos2Content(data.launch_file_content || ''))
       .catch(() => {});
 
-    fetch('/api/export/urdf')
+    fetch(getApiUrl('/api/export/urdf'))
       .then((res) => res.json())
       .then((data) => setUrdfContent(data.urdf || ''))
       .catch(() => {});
 
-    fetch('/api/export/webots')
+    fetch(getApiUrl('/api/export/webots'))
       .then((res) => res.json())
       .then((data) => setWebotsContent(data.webots_world || ''))
       .catch(() => {});
 
-    fetch('/api/export/pybullet')
+    fetch(getApiUrl('/api/export/pybullet'))
       .then((res) => res.json())
       .then((data) => setPybulletContent(data.pybullet_script || ''))
       .catch(() => {});
 
-    fetch('/api/export/report')
+    fetch(getApiUrl('/api/export/report'))
       .then((res) => res.json())
       .then((data) => setReportContent(data.markdown_report || ''))
       .catch(() => {});

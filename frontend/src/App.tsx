@@ -10,6 +10,7 @@ import { CustomCursor } from './components/CustomCursor';
 import { ExportModal } from './components/ExportModal';
 import { CriticModal } from './components/CriticModal';
 import { SettingsModal } from './components/SettingsModal';
+import { getApiUrl, getWsUrl } from './config';
 
 import {
   EIRSpec,
@@ -82,7 +83,7 @@ export const App: React.FC = () => {
 
   const fetchPreset = async (presetName: string) => {
     try {
-      const res = await fetch(`/api/presets/load`, {
+      const res = await fetch(getApiUrl('/api/presets/load'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preset_id: presetName }),
@@ -105,8 +106,7 @@ export const App: React.FC = () => {
 
   // WebSocket for live telemetry streaming
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/simulation`;
+    const wsUrl = getWsUrl();
     const socket = new WebSocket(wsUrl);
 
     socket.onmessage = (event) => {
@@ -143,7 +143,7 @@ export const App: React.FC = () => {
   const handleInitialize = async () => {
     setIsInitializing(true);
     try {
-      const res = await fetch('/api/orchestrator/init', {
+      const res = await fetch(getApiUrl('/api/orchestrator/init'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: humanPrompt }),
@@ -165,7 +165,7 @@ export const App: React.FC = () => {
     if (isRunning || isConverged) return;
     setIsRunning(true);
     try {
-      const res = await fetch('/api/orchestrator/step', { method: 'POST' });
+      const res = await fetch(getApiUrl('/api/orchestrator/step'), { method: 'POST' });
       const data = await res.json();
       if (data.eir) setEir(data.eir);
       if (data.metrics) setMetrics(data.metrics);
@@ -185,7 +185,7 @@ export const App: React.FC = () => {
     if (isRunning || isConverged) return;
     setIsRunning(true);
     try {
-      const res = await fetch('/api/orchestrator/run_all', { method: 'POST' });
+      const res = await fetch(getApiUrl('/api/orchestrator/run_all'), { method: 'POST' });
       const data = await res.json();
       if (data.eir) setEir(data.eir);
       if (data.metrics) setMetrics(data.metrics);
@@ -203,7 +203,7 @@ export const App: React.FC = () => {
 
   const handleReset = async () => {
     try {
-      await fetch('/api/orchestrator/reset', { method: 'POST' });
+      await fetch(getApiUrl('/api/orchestrator/reset'), { method: 'POST' });
       setThoughts([]);
       setHistory([]);
       setMetrics(null);
@@ -219,7 +219,7 @@ export const App: React.FC = () => {
   const handleRunCritic = async () => {
     setIsLoadingCritic(true);
     try {
-      const res = await fetch('/api/critic/perturbations', { method: 'POST' });
+      const res = await fetch(getApiUrl('/api/critic/perturbations'), { method: 'POST' });
       const data = await res.json();
       setCriticVerdict(data.critic_verdict);
     } catch (err) {
