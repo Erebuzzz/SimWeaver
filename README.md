@@ -2,8 +2,8 @@
 
 [![Production](https://img.shields.io/badge/Production-Live-success?style=for-the-badge&logo=vercel)](https://simweaver.vercel.app)
 [![API Status](https://img.shields.io/badge/Backend-Render-blue?style=for-the-badge&logo=render)](https://simweaver-api.onrender.com/api/health)
-[![WebSocket](https://img.shields.io/badge/Telemetry-Streaming-orange?style=for-the-badge)](wss://simweaver-api.onrender.com/ws/simulation)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Telemetry](https://img.shields.io/badge/Telemetry-Streaming-orange?style=for-the-badge&logo=socketdotio)](https://simweaver.vercel.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
 SimWeaver is an autonomous multi-agent simulation engineering platform designed to bridge natural language human engineering intent and formal, physically verified robotics simulation environments. Rather than simply generating static simulator code from a prompt, SimWeaver conducts the complete iterative engineering lifecycle: it parses human requirements into a strongly typed Executable Intermediate Representation (EIR), builds continuous ODE kinematic physics environments ($\Delta t = 0.05\text{s}$), evaluates high-resolution telemetry against formal quantitative constraints, performs causal trace diagnosis on failure events, formulates and ranks candidate parametric interventions, subjects solutions to adversarial 4D perturbation stress tests via a Critic agent, and iterates autonomously until multi-robot coordination converges.
 
@@ -15,7 +15,7 @@ SimWeaver is an autonomous multi-agent simulation engineering platform designed 
   - Direct Production Alias: [https://simweaver-omega.vercel.app](https://simweaver-omega.vercel.app)
 - **Robotics Simulation API (Render Dedicated Web Service):** [https://simweaver-api.onrender.com](https://simweaver-api.onrender.com)
   - Health Check: `https://simweaver-api.onrender.com/api/health` (HTTP 200 OK)
-  - Duplex Telemetry WebSockets: `wss://simweaver-api.onrender.com/ws/simulation`
+  - Duplex Telemetry WebSockets: `wss://simweaver-api.onrender.com/ws/simulation` (and `/ws/stream`)
 - **GitHub Repository:** [https://github.com/Erebuzzz/SimWeaver.git](https://github.com/Erebuzzz/SimWeaver.git)
 
 ---
@@ -171,7 +171,7 @@ constraints:
   max_delivery_time_sec: 60.0
   min_separation_m: 0.30
   min_completion_rate: 0.95
-  max_near_misses: 5
+  max_near_miss: 5
 ```
 
 ---
@@ -197,7 +197,62 @@ The frontend includes an interactive Three.js WebGL viewport allowing detailed h
 
 ---
 
-## 6. 24/7 Zero-Cold-Start Keep-Alive Automation
+## 6. High-Resolution Telemetry & Live Streaming Architecture
+
+SimWeaver captures and broadcasts continuous micro-events and spatial trajectories at 20 Hz tick resolution. The telemetry pipeline records kinematic state vectors, sensor hits, and spatial-temporal conflict events for causal diagnosis:
+
+```mermaid
+flowchart LR
+    subgraph Sim ["Physics Engine (dt=0.05s)"]
+        RobotState["Kinematics: x, y, theta, v, w"]
+        RayHits["LiDAR Raycast Hit Points"]
+        Events["Collisions & Near-Miss Micro-Events"]
+    end
+
+    Sim --> Rec["TelemetryRecorder (simweaver/simulation/telemetry.py)"]
+    Rec --> Frame["SimulationFrame Snapshot"]
+    
+    Frame --> WS["WebSocket Gateway (/ws/simulation)"]
+    Frame --> Store[("Experiment Trace History")]
+    
+    WS --> Canvas["2D Canvas Simulator"]
+    WS --> WebGL["3D Three.js Digital Twin"]
+    Store --> Scrub["Historical Iteration Scrubber"]
+    Store --> Diag["Failure Diagnostician"]
+```
+
+### Telemetry Packet Schema (`SimulationFrame`)
+
+```json
+{
+  "sim_time": 14.25,
+  "step_index": 285,
+  "robots": [
+    {
+      "robot_id": "amr_1",
+      "x": 11.45,
+      "y": 7.82,
+      "theta": 1.57,
+      "v": 0.95,
+      "w": 0.05,
+      "state": "EN_ROUTE",
+      "task_id": "task_3",
+      "is_yielding": false,
+      "reservation_held": "res_intersection_1",
+      "lidar_hits": [[11.45, 8.5], [12.1, 7.82]]
+    }
+  ],
+  "active_reservations": {
+    "res_intersection_1": "amr_1"
+  },
+  "collision_count_so_far": 0,
+  "completed_tasks_so_far": 3
+}
+```
+
+---
+
+## 7. 24/7 Zero-Cold-Start Keep-Alive Automation
 
 To eliminate Render free-tier idle shutdowns (where services sleep after 15 minutes of inactivity), SimWeaver deploys a dual keep-alive mechanism:
 1. **Internal FastAPI Lifespan Self-Ping** ([app.py](file:///d:/SimWeave/simweaver/server/app.py)): Automatically detects `RENDER_EXTERNAL_URL` and issues an asynchronous HTTP GET to `/api/health` every 10 minutes (600s).
@@ -205,7 +260,7 @@ To eliminate Render free-tier idle shutdowns (where services sleep after 15 minu
 
 ---
 
-## 7. Model Context Protocol (MCP) Integration
+## 8. Model Context Protocol (MCP) Integration
 
 SimWeaver can be managed autonomously via MCP from compatible AI assistants (Gemini, Claude, Cursor, Codex):
 
@@ -235,7 +290,7 @@ SimWeaver can be managed autonomously via MCP from compatible AI assistants (Gem
 
 ---
 
-## 8. Multi-Simulator Code Synthesis
+## 9. Multi-Simulator Code Synthesis
 
 When a robotics system satisfies all constraints and passes the Critic perturbation tests, SimWeaver exports the converged specification into native simulator packages:
 - **ROS 2 Nav2**: Full Python launch package with DWA local planner parameters, costmap inflation layers, and lifecycle nodes.
@@ -246,7 +301,7 @@ When a robotics system satisfies all constraints and passes the Critic perturbat
 
 ---
 
-## 9. Project Structure
+## 10. Project Structure
 
 ```
 d:\SimWeave/
@@ -295,12 +350,13 @@ d:\SimWeave/
 ├── run_tests.py                  # Test suite runner
 ├── requirements.txt              # Python dependencies
 ├── .gitignore                    # Git ignore rules
+├── LICENSE                       # MIT Open Source License
 └── README.md                     # Comprehensive documentation
 ```
 
 ---
 
-## 10. Quickstart Guide
+## 11. Quickstart Guide
 
 ### Prerequisites
 - Python 3.10+
@@ -320,7 +376,7 @@ cd ..
 
 ### 3. Run Automated Test Suite
 ```bash
-python -m pytest -p no:hypothesis tests/test_eir.py tests/test_simulation.py
+python run_tests.py
 ```
 
 ### 4. Start Full Platform Locally
@@ -329,3 +385,9 @@ python start_simweaver.py
 ```
 
 Open your browser at `http://localhost:5173` to access the local SimWeaver Engineering Control Room, or visit the live production deployment at **[https://simweaver.vercel.app](https://simweaver.vercel.app)**.
+
+---
+
+## 12. License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
