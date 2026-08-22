@@ -104,6 +104,18 @@ class ConnectionManager:
 ws_manager = ConnectionManager()
 
 
+@app.get("/")
+@app.head("/")
+async def root():
+    return {
+        "status": "healthy",
+        "service": "SimWeaver Agentic Robotics Simulation Engineer API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "health": "/api/health"
+    }
+
+
 @app.get("/api/health")
 async def health():
     return {
@@ -162,12 +174,13 @@ async def step_orchestrator():
 
 
 @app.post("/api/orchestrator/run_all")
-async def run_all(req: PromptRequest):
+async def run_all(req: Optional[PromptRequest] = None):
     """Runs autonomous loop until convergence."""
-    if req.api_key:
+    if req and req.api_key:
         orchestrator.llm.api_key = req.api_key
 
-    wm = await orchestrator.run_full_autonomous_loop(req.prompt, max_iterations=5)
+    prompt = (req.prompt if req and req.prompt else None) or orchestrator.world_model.active_eir.human_intent or "Warehouse 5-AMR optimization"
+    wm = await orchestrator.run_full_autonomous_loop(prompt, max_iterations=5)
     
     await ws_manager.broadcast({
         "type": "RUN_ALL_COMPLETE",
@@ -382,6 +395,7 @@ async def get_experiment_frames(exp_id: int):
     raise HTTPException(status_code=404, detail="Experiment record not found")
 
 
+@app.websocket("/ws/simulation")
 @app.websocket("/ws/stream")
 async def websocket_endpoint(websocket: WebSocket):
     """
@@ -390,13 +404,24 @@ async def websocket_endpoint(websocket: WebSocket):
     """
     await ws_manager.connect(websocket)
     try:
+        # Send initial status handshake
+        await websocket.send_json({
+            "type": "status",
+            "phase": orchestrator.current_phase,
+            "iteration": orchestrator.current_iteration,
+            "is_converged": orchestrator.world_model.is_converged
+        })
+
         while True:
             data = await websocket.receive_text()
-            msg = json.loads(data)
+            try:
+                msg = json.loads(data)
+            except Exception:
+                continue
+
             action = msg.get("action")
 
             if action == "run_live_simulation":
-                # Run live simulation step-by-step and stream frames to WebSocket
                 eir = orchestrator.world_model.active_eir
                 engine = SimulationEngine(eir, seed=random.randint(1, 1000))
                 speed = msg.get("speed", 1.0)
@@ -406,7 +431,6 @@ async def websocket_endpoint(websocket: WebSocket):
                 for step in range(300):
                     engine.step(dt)
                     if step % 2 == 0:
-                        # Grab latest frame
                         if engine.telemetry.frames:
                             latest_frame = engine.telemetry.frames[-1]
                             await websocket.send_json({
@@ -424,5 +448,5 @@ async def websocket_endpoint(websocket: WebSocket):
 
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket)
-    except Exception as e:
+    except Exception:
         ws_manager.disconnect(websocket)

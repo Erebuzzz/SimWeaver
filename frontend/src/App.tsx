@@ -185,12 +185,16 @@ export const App: React.FC = () => {
     if (isRunning || isConverged) return;
     setIsRunning(true);
     try {
-      const res = await fetch(getApiUrl('/api/orchestrator/run_all'), { method: 'POST' });
+      const res = await fetch(getApiUrl('/api/orchestrator/run_all'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: humanPrompt }),
+      });
       const data = await res.json();
       if (data.eir) setEir(data.eir);
       if (data.metrics) setMetrics(data.metrics);
       if (data.history) setHistory(data.history);
-      if (data.thoughts) setThoughts((prev) => [...prev, ...data.new_thoughts]);
+      if (data.thoughts) setThoughts((prev) => [...prev, ...(data.new_thoughts || [])]);
       setPhase(data.phase || 'CONVERGED');
       setIsConverged(Boolean(data.is_converged));
       setIteration(data.iteration || 0);
