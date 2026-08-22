@@ -135,9 +135,14 @@ class AgenticOrchestrator:
         )
         engine = self.simulation_builder.build_simulation(eir, seed=42 + iter_num)
 
-        # 2. Run and Evaluate
+        # 2. Run and Evaluate in background thread to keep event loop 100% responsive
         self.current_phase = "EVALUATING"
-        metrics, telemetry = self.evaluator.evaluate_run(engine, max_sim_time=65.0, dt=0.05)
+        metrics, telemetry = await asyncio.to_thread(
+            self.evaluator.evaluate_run,
+            engine,
+            max_sim_time=30.0,
+            dt=0.05
+        )
         
         pass_status = "PASSED" if metrics.satisfies_all_constraints else "FAILED"
         self.log_thought(

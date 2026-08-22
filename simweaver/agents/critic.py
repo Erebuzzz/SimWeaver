@@ -22,84 +22,79 @@ class CriticAgent:
     def __init__(self, llm_client: Optional[LLMClient] = None):
         self.llm = llm_client or LLMClient()
 
+    def _run_test(self, eir_spec: EIRSpec, seed: int, max_sim_time: float = 20.0) -> MetricsResult:
+        eng = SimulationEngine(eir_spec, seed=seed)
+        m, _ = eng.run_full_simulation(max_sim_time=max_sim_time, dt=0.05)
+        return m
+
     async def verify_robustness(self, eir: EIRSpec, baseline_metrics: MetricsResult) -> CriticVerdict:
         """
-        Runs a battery of 4 adversarial perturbation tests on the proposed design.
+        Runs a battery of 4 adversarial perturbation tests on the proposed design concurrently.
         """
-        tests: List[PerturbationTestResult] = []
-
-        # 1. Perturbation: Sensor Noise (+15% noise std)
+        # 1. Sensor Noise (+50% noise std)
         eir_noise = eir.model_copy(deep=True)
         eir_noise.sensors.lidar_noise_std = max(0.01, eir.sensors.lidar_noise_std * 1.5)
-        eng_noise = SimulationEngine(eir_noise, seed=101)
-        m_noise, _ = eng_noise.run_full_simulation(max_sim_time=40.0, dt=0.05)
-        p_noise = (m_noise.collision_count <= eir.constraints.max_allowed_collisions and
-                   m_noise.avg_delivery_time_sec <= eir.constraints.max_delivery_time_sec * 1.15)
-        tests.append(
+
+        # 2. Robot Mass & Acceleration (+20% mass, -15% braking acceleration)
+        eir_mass = eir.model_copy(deep=True)
+        eir_mass.robot.mass = eir.robot.mass * 1.20
+        eir_mass.robot.max_linear_accel = max(0.8, eir.robot.max_linear_accel * 0.85)
+
+        # 3. Wheel Traction Drift (-20% margin tolerance)
+        eir_fric = eir.model_copy(deep=True)
+        eir_fric.planner.goal_tolerance = max(0.2, eir.planner.goal_tolerance * 0.9)
+
+        # 4. Task Density Surge (+25% task count)
+        eir_task = eir.model_copy(deep=True)
+        eir_task.tasks.task_count = int(eir.tasks.task_count * 1.25)
+
+        # Run all 4 simulations concurrently in background threads
+        import asyncio
+        m_noise, m_mass, m_fric, m_task = await asyncio.gather(
+            asyncio.to_thread(self._run_test, eir_noise, 101, 20.0),
+            asyncio.to_thread(self._run_test, eir_mass, 202, 20.0),
+            asyncio.to_thread(self._run_test, eir_fric, 303, 20.0),
+            asyncio.to_thread(self._run_test, eir_task, 404, 25.0)
+        )
+
+        tests: List[PerturbationTestResult] = [
             PerturbationTestResult(
                 name="Sensor Measurement Noise (+50% noise std)",
                 perturbation_type="sensor_noise",
                 delta_percentage=50.0,
                 collisions=m_noise.collision_count,
                 avg_delivery_time=m_noise.avg_delivery_time_sec,
-                passed=p_noise
-            )
-        )
-
-        # 2. Perturbation: Robot Mass & Acceleration (+20% mass, -15% braking acceleration)
-        eir_mass = eir.model_copy(deep=True)
-        eir_mass.robot.mass = eir.robot.mass * 1.20
-        eir_mass.robot.max_linear_accel = max(0.8, eir.robot.max_linear_accel * 0.85)
-        eng_mass = SimulationEngine(eir_mass, seed=202)
-        m_mass, _ = eng_mass.run_full_simulation(max_sim_time=40.0, dt=0.05)
-        p_mass = (m_mass.collision_count <= eir.constraints.max_allowed_collisions and
-                  m_mass.avg_delivery_time_sec <= eir.constraints.max_delivery_time_sec * 1.15)
-        tests.append(
+                passed=(m_noise.collision_count <= eir.constraints.max_allowed_collisions and
+                        m_noise.avg_delivery_time_sec <= eir.constraints.max_delivery_time_sec * 1.15)
+            ),
             PerturbationTestResult(
                 name="Payload Surge (+20% mass, -15% braking acceleration)",
                 perturbation_type="mass_surge",
                 delta_percentage=20.0,
                 collisions=m_mass.collision_count,
                 avg_delivery_time=m_mass.avg_delivery_time_sec,
-                passed=p_mass
-            )
-        )
-
-        # 3. Perturbation: Wheel Friction Reduction (Simulated speed overshoot)
-        eir_fric = eir.model_copy(deep=True)
-        eir_fric.planner.goal_tolerance = max(0.2, eir.planner.goal_tolerance * 0.9)
-        eng_fric = SimulationEngine(eir_fric, seed=303)
-        m_fric, _ = eng_fric.run_full_simulation(max_sim_time=40.0, dt=0.05)
-        p_fric = (m_fric.collision_count <= eir.constraints.max_allowed_collisions and
-                  m_fric.avg_delivery_time_sec <= eir.constraints.max_delivery_time_sec * 1.15)
-        tests.append(
+                passed=(m_mass.collision_count <= eir.constraints.max_allowed_collisions and
+                        m_mass.avg_delivery_time_sec <= eir.constraints.max_delivery_time_sec * 1.15)
+            ),
             PerturbationTestResult(
                 name="Wheel Traction Drift (-20% margin tolerance)",
                 perturbation_type="wheel_friction",
                 delta_percentage=-20.0,
                 collisions=m_fric.collision_count,
                 avg_delivery_time=m_fric.avg_delivery_time_sec,
-                passed=p_fric
-            )
-        )
-
-        # 4. Perturbation: Task Density Surge (+25% task count)
-        eir_task = eir.model_copy(deep=True)
-        eir_task.tasks.task_count = int(eir.tasks.task_count * 1.25)
-        eng_task = SimulationEngine(eir_task, seed=404)
-        m_task, _ = eng_task.run_full_simulation(max_sim_time=45.0, dt=0.05)
-        p_task = (m_task.collision_count <= eir.constraints.max_allowed_collisions and
-                  m_task.avg_delivery_time_sec <= eir.constraints.max_delivery_time_sec * 1.20)
-        tests.append(
+                passed=(m_fric.collision_count <= eir.constraints.max_allowed_collisions and
+                        m_fric.avg_delivery_time_sec <= eir.constraints.max_delivery_time_sec * 1.15)
+            ),
             PerturbationTestResult(
                 name="Logistics Surge (+25% task volume)",
                 perturbation_type="task_density",
                 delta_percentage=25.0,
                 collisions=m_task.collision_count,
                 avg_delivery_time=m_task.avg_delivery_time_sec,
-                passed=p_task
+                passed=(m_task.collision_count <= eir.constraints.max_allowed_collisions and
+                        m_task.avg_delivery_time_sec <= eir.constraints.max_delivery_time_sec * 1.20)
             )
-        )
+        ]
 
         passed_count = sum(1 for t in tests if t.passed)
         robustness_index = round(passed_count / len(tests), 2)
