@@ -1,61 +1,59 @@
 # SimWeaver: Autonomous Multi-Agent Robotics Simulation Engineer
 
-SimWeaver is an autonomous simulation engineering system designed to bridge natural language human engineering intent and formal, physically verified robotics simulation environments. Rather than simply generating static simulator code from a prompt, SimWeaver conducts the complete iterative engineering lifecycle: it translates natural language requirements into an Executable Intermediate Representation (EIR), builds continuous physics and kinematic multi-robot simulations, evaluates telemetry against strict quantitative constraints, diagnoses root causes of failures, formulates and ranks candidate interventions, subjects candidates to adversarial perturbation testing via a Critic agent, and iterates autonomously until all constraints are satisfied.
+[![Production](https://img.shields.io/badge/Production-Live-success?style=for-the-badge&logo=vercel)](https://simweaver.vercel.app)
+[![API Status](https://img.shields.io/badge/Backend-Render-blue?style=for-the-badge&logo=render)](https://simweaver-api.onrender.com/api/health)
+[![WebSocket](https://img.shields.io/badge/Telemetry-Streaming-orange?style=for-the-badge)](wss://simweaver-api.onrender.com/ws/simulation)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-```mermaid
-flowchart TD
-    A["Human Intent: Build 5 AMRs under 60s delivery and zero collisions"] --> B["Requirement Agent"]
-    B -->|"Extract formal constraints"| C["Systems Architect Agent"]
-    C -->|"Synthesize EIR schema S_0"| D["Simulation Builder Agent"]
-    D -->|"Compile EIR to continuous ODE"| E["Robotics Physics Engine dt=0.05s"]
-    E -->|"Telemetry traces"| F["Evaluator Agent"]
-    F -->|"Cost function J"| G{"Satisfies All Constraints?"}
-    G -->|"No: Violations Detected"| H["Failure Diagnosis Agent"]
-    H -->|"Causal root cause"| I["Experiment Optimizer Agent"]
-    I -->|"Parametric intervention S_t+1"| D
-    G -->|"Yes: Nominal Pass"| J["Adversarial Critic Agent"]
-    J -->|"4D Perturbation Battery"| K{"Robust Under Shifts?"}
-    K -->|"No: Fragile Overfit"| H
-    K -->|"Yes: Verified Robust"| L["Design Converged S_final"]
-    L --> M["ROS2 / Webots / URDF / PyBullet Export"]
-```
+SimWeaver is an autonomous multi-agent simulation engineering platform designed to bridge natural language human engineering intent and formal, physically verified robotics simulation environments. Rather than simply generating static simulator code from a prompt, SimWeaver conducts the complete iterative engineering lifecycle: it parses human requirements into a strongly typed Executable Intermediate Representation (EIR), builds continuous ODE kinematic physics environments ($\Delta t = 0.05\text{s}$), evaluates high-resolution telemetry against formal quantitative constraints, performs causal trace diagnosis on failure events, formulates and ranks candidate parametric interventions, subjects solutions to adversarial 4D perturbation stress tests via a Critic agent, and iterates autonomously until multi-robot coordination converges.
 
 ---
 
-## 1. Core Architecture
+## Live Production Endpoints
 
-SimWeaver is structured around a decoupled, simulator-independent architecture. Agents reason over high-level robotics concepts in the **Engineering Intermediate Representation (EIR)**, while deterministic execution engines perform simulation, physics integration, raycasting, and metric calculation.
+- **Interactive Control Room (Vercel Global CDN):** [https://simweaver.vercel.app](https://simweaver.vercel.app)
+  - Direct Production Alias: [https://simweaver-omega.vercel.app](https://simweaver-omega.vercel.app)
+- **Robotics Simulation API (Render Dedicated Web Service):** [https://simweaver-api.onrender.com](https://simweaver-api.onrender.com)
+  - Health Check: `https://simweaver-api.onrender.com/api/health` (HTTP 200 OK)
+  - Duplex Telemetry WebSockets: `wss://simweaver-api.onrender.com/ws/simulation`
+- **GitHub Repository:** [https://github.com/Erebuzzz/SimWeaver.git](https://github.com/Erebuzzz/SimWeaver.git)
+
+---
+
+## 1. System Design & Architecture
+
+SimWeaver is organized around a decoupled, simulator-independent architecture. Agents reason over high-level robotics concepts in the **Engineering Intermediate Representation (EIR)**, while deterministic execution engines perform continuous numerical physics integration, raycasting, and metric calculation.
 
 ```mermaid
 flowchart TD
-    User(["Human Objective / Natural Language"]) --> ReqAgent["Requirement Agent"]
+    User(["Human Intent / Natural Language Objective"]) --> ReqAgent["Requirement Agent"]
     ReqAgent --> EIR["Engineering Intermediate Representation (EIR)"]
     
     EIR --> ArchAgent["Systems Architecture Agent"]
     ArchAgent --> WorldModel[("World Model & State Manager")]
     
     WorldModel --> SimBuilder["Simulation Builder & Adapter"]
-    SimBuilder --> SimEngine["Robotics Simulation Engine"]
+    SimBuilder --> SimEngine["Robotics Physics Simulation Engine (dt=0.05s)"]
     
-    SimEngine --> Telemetry[("Trace & Telemetry Store")]
+    SimEngine --> Telemetry[("Trace & Telemetry Event Store")]
     SimEngine --> EvalAgent["Evaluation Agent"]
     
-    EvalAgent --> CriteriaCheck{"Meets Requirements?"}
+    EvalAgent --> CriteriaCheck{"Satisfies All Constraints?"}
     
-    CriteriaCheck -- Yes --> CriticAgent["Critic & Robustness Agent"]
-    CriticAgent --> RobustnessCheck{"Passes Perturbations?"}
-    RobustnessCheck -- Yes --> Converged(["Final Converged Design & Export"])
+    CriteriaCheck -- Yes --> CriticAgent["Critic & Adversarial Robustness Agent"]
+    CriticAgent --> RobustnessCheck{"Passes 4D Perturbation Battery?"}
+    RobustnessCheck -- Yes --> Converged(["Final Converged Design S_final & Multi-Sim Export"])
     RobustnessCheck -- No --> DiagAgent["Failure Diagnosis Agent"]
     
     CriteriaCheck -- No --> DiagAgent
     
     DiagAgent --> RepairAgent["Experiment / Optimizer Agent"]
-    RepairAgent --> Interventions["Ranked Candidate Interventions"]
-    Interventions --> NewDesign["Updated Design S_t+1"]
+    RepairAgent --> Interventions["Ranked Candidate Parametric Interventions"]
+    Interventions --> NewDesign["Synthesized Design S_t+1"]
     NewDesign --> SimBuilder
 
-    subgraph UI ["Engineering Control Room"]
-        Dashboard["Real-Time 3D/2D Canvas / Telemetry / Thought Stream / Lineage Charts"]
+    subgraph UI ["Engineering Control Room (3D WebGL / 2D Canvas)"]
+        Dashboard["Digital Twin / Hardware Inspection / Thought Stream / Pareto Frontier"]
     end
 
     SimEngine -.-> Dashboard
@@ -68,35 +66,56 @@ flowchart TD
 
 ## 2. Multi-Agent Reasoning Loop
 
-SimWeaver coordinates 7 specialized agent roles:
+SimWeaver coordinates 7 specialized agent roles working across formal engineering stages:
+
+```mermaid
+flowchart LR
+    subgraph Plan_Stage ["1. Plan & Architect"]
+        RA["Requirement Agent<br/>• Parse prompt<br/>• Extract constraints"] --> SA["Systems Architect<br/>• Robot morphology<br/>• Sensor suites<br/>• Planners"]
+    end
+    subgraph Build_Stage ["2. Build & Simulate"]
+        SA --> SB["Simulation Builder<br/>• EIR to ODE compiler"]
+        SB --> ODE["Kinematic ODE Physics<br/>• Raycasting LiDAR<br/>• A* + DWA Navigation"]
+    end
+    subgraph Evaluate_Stage ["3. Evaluate & Critic"]
+        ODE --> EV["Evaluator Agent<br/>• KPI extraction<br/>• Target vs actual"]
+        EV --> CR["Adversarial Critic<br/>• 4D stress tests<br/>• Robustness score"]
+    end
+    subgraph Diagnose_Stage ["4. Diagnose & Optimize"]
+        EV -.->|"Constraint Violation"| FD["Failure Diagnostician<br/>• Causal trace analysis<br/>• Collision isolation"]
+        CR -.->|"Fragile Overfit"| FD
+        FD --> EO["Experiment Optimizer<br/>• Multi-objective cost J<br/>• Ranked interventions"]
+        EO -->|"Updated S_t+1"| SB
+    end
+```
 
 | Agent | Core Responsibility | Input | Output |
 |---|---|---|---|
-| **Requirement Agent** | Parses natural language into formal constraints, objectives, and metric targets | User Prompt | Structured Constraints & Objectives |
-| **Systems Architect** | Selects initial AMR morphology, sensor suite, planner, and coordination stack | Requirements | Initial Design $S_0$ + Rationale |
-| **Simulation Builder** | Compiles EIR into executable continuous simulation instances | EIR Design $S_t$ | Physics Simulation Environment |
+| **Requirement Agent** | Parses unstructured prompt into formal constraints, objectives, and metric targets | User Prompt | Structured Constraints & Objectives |
+| **Systems Architect** | Synthesizes baseline AMR morphology, sensor suite, planner, and coordination stack | Requirements | Initial Design $S_0$ + Rationale |
+| **Simulation Builder** | Compiles EIR into executable continuous simulation instances | EIR Design $S_t$ | Continuous Physics ODE Environment |
 | **Evaluation Agent** | Synthesizes telemetry traces into standardized KPI verification tables | Simulation Traces | Target vs Actual Metrics Table |
-| **Failure Diagnosis Agent** | Causal trace analysis to isolate bottlenecks and collision hot-spots | Collision & Near-Miss Traces | Causal Diagnosis Hypothesis |
+| **Failure Diagnosis Agent** | Causal trace analysis to isolate bottlenecks, near-misses, and collision hot-spots | Collision & Near-Miss Traces | Causal Diagnosis Hypothesis |
 | **Experiment Optimizer** | Generates, predicts trade-offs, and ranks candidate engineering interventions | Diagnosis + Lineage | Ranked Interventions + Design $S_{t+1}$ |
 | **Adversarial Critic** | Stress-tests designs against environmental perturbations to prevent overfitting | Nominal Solution | Robustness Index (0 to 100%) |
 
-### Multi-Objective Optimization Formulation
+### Mathematical Multi-Objective Optimization Formulation
 
-The Experiment Optimizer ranks candidate modifications using a multi-objective cost function $J$:
+The Experiment Optimizer evaluates candidate modifications using a composite multi-objective cost function $J$:
 
 $$J(S_t) = w_c \cdot C + w_t \cdot \bar{T} + w_r \cdot (1 - R) + w_s \cdot \max(0, d_{\text{safe}} - d_{\text{min}})$$
 
 Where:
-- $C$: Collision count ($w_c = 100.0$)
+- $C$: Total collision count across simulation horizon ($w_c = 100.0$)
 - $\bar{T}$: Average package delivery time in seconds ($w_t = 0.05$)
 - $R$: Task completion rate ($w_r = 10.0$)
-- $d_{\text{safe}} - d_{\text{min}}$: Safety separation deficit ($w_s = 20.0$)
+- $d_{\text{safe}} - d_{\text{min}}$: Safety separation deficit in meters ($w_s = 20.0$)
 
 ---
 
 ## 3. Engineering Intermediate Representation (EIR)
 
-The EIR is a typed, simulator-independent representation encompassing all aspects of the robotics problem:
+The EIR is a typed, simulator-independent Pydantic schema encompassing environment geometry, robot kinematic properties, sensor configurations, navigation planners, and safety constraints:
 
 ```yaml
 id: eir_iter_2
@@ -157,44 +176,83 @@ constraints:
 
 ---
 
-## 4. Robotics Simulation Engine
+## 4. Continuous Physics ODE & Perception Engine
 
-The backend simulation engine includes:
-- **Continuous 2D Kinematics and Dynamics**: Step integration ($\Delta t = 0.05$s), acceleration boundaries, and inertia modeling.
-- **Raycasted 2D LiDAR Perception**: Ray-polygon and ray-circle intersections with Gaussian measurement noise modeling and intensity radiance attenuation.
-- **Global Path Planning (A*)**: Discretized grid planning with diagonal costs, obstacle inflation buffers, and line-of-sight waypoint smoothing.
+- **Continuous 2D Kinematics and Dynamics**: Step integration ($\Delta t = 0.05\text{s}$), acceleration boundaries, and inertia modeling.
+- **Physical Intensity-Driven LiDAR**: Ray-polygon and ray-circle intersections with inverse square $1/r^2$ radiance attenuation modeling and obstacle reflection sparks.
+- **Global Path Planning (A*)**: Discretized grid planning with diagonal 8-connectivity, obstacle inflation buffers, and line-of-sight waypoint smoothing.
 - **Local Reactive Controller (DWA)**: Dynamic Window velocity sampling optimizing heading progress, obstacle clearance, and speed profile.
-- **Traffic Coordination**: Spatial-temporal intersection reservation manager granting mutual exclusion tokens to eliminate intersection crossing deadlocks.
+- **Traffic Coordination**: Spatial-temporal intersection reservation manager granting mutual exclusion tokens to eliminate crossing deadlocks.
 - **Continuous Collision Detection**: High-frequency robot-to-robot and robot-to-shelf distance checks with microsecond collision event timestamps.
 
 ---
 
-## 5. Adversarial Critic & Robustness Suite
+## 5. 3D Digital Twin & Explodify Hardware Inspection
 
-Before declaring a design converged, the Critic agent challenges the system with 4 perturbation batteries:
-1. **Sensor Measurement Noise**: $+50\%$ LiDAR measurement noise variance.
-2. **Payload Surge**: $+40\%$ robot mass increase with $-15\%$ braking deceleration.
-3. **Wheel Traction Drift**: $-20\%$ traction margin tolerance simulating floor slippage.
-4. **Logistics Volume Surge**: $+50\%$ order arrival rate testing throughput saturation.
-
----
-
-## 6. Engineering Control Room UI
-
-The frontend provides an interactive control room built with React 18, TypeScript, Tailwind CSS, Three.js WebGL, and Mermaid.js:
-- **Navigation Views**: Home Capability Showcase, Simulator Studio, and Interactive Documentation.
-- **Left Panel**: Human Intent editor, extracted requirements card, live EIR YAML/JSON viewer, and active architecture details.
-- **Center Stage**: High-frequency interactive 3D WebGL Digital Twin and 2D Blueprint Canvas rendering warehouse shelves, pick stations, delivery bays, AMRs, intensity-driven LiDAR scan discs, path waypoints, and reservation zones.
-- **Right Panel**: Real-time Agentic Thought Stream displaying live reasoning cards, failure diagnoses, candidate intervention tables, and critic verdicts.
-- **Bottom Panel**: Real-time KPI metrics, experiment lineage comparison table, and Pareto trajectory view.
-- **Export Modal**: Export EIR specification (YAML/JSON), ROS2 Python launch package, Webots `.wbt`, URDF XML, PyBullet script, or comprehensive Markdown engineering audit report.
+The frontend includes an interactive Three.js WebGL viewport allowing detailed hardware inspection:
+- **Solid Mode**: Production matte titanium chassis with status LED rings and intensity LiDAR radiance.
+- **Explodify Mode**: Smooth kinematic explosion animation separating LiDAR dome ($+1.6\text{m}$), compute motherboard ($+1.0\text{m}$), LiFePO4 battery ($+0.4\text{m}$), brushless drive motors, and chassis.
+- **X-Ray Mode**: Translucent holographic wireframe exposing internal subsystems and power routing.
+- **Subsystem Inspection**: Real-time telemetry inspect bar for LiDAR, Jetson Compute, 24V Battery, Drive Motors, and Structural Chassis.
 
 ---
 
-## 7. Project Structure
+## 6. 24/7 Zero-Cold-Start Keep-Alive Automation
+
+To eliminate Render free-tier idle shutdowns (where services sleep after 15 minutes of inactivity), SimWeaver deploys a dual keep-alive mechanism:
+1. **Internal FastAPI Lifespan Self-Ping** ([app.py](file:///d:/SimWeave/simweaver/server/app.py)): Automatically detects `RENDER_EXTERNAL_URL` and issues an asynchronous HTTP GET to `/api/health` every 10 minutes (600s).
+2. **GitHub Actions Scheduled Cron** ([.github/workflows/keep_alive.yml](file:///d:/SimWeave/.github/workflows/keep_alive.yml)): Fires every 10 minutes on GitHub's free runners (`*/10 * * * *`) dispatching external heartbeats.
+
+---
+
+## 7. Model Context Protocol (MCP) Integration
+
+SimWeaver can be managed autonomously via MCP from compatible AI assistants (Gemini, Claude, Cursor, Codex):
+
+```json
+{
+  "mcpServers": {
+    "vercel": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.vercel.com"]
+    },
+    "render": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.render.com/mcp",
+        "--header",
+        "Authorization: Bearer YOUR_RENDER_API_KEY"
+      ],
+      "env": {
+        "RENDER_API_KEY": "YOUR_RENDER_API_KEY"
+      }
+    }
+  }
+}
+```
+
+---
+
+## 8. Multi-Simulator Code Synthesis
+
+When a robotics system satisfies all constraints and passes the Critic perturbation tests, SimWeaver exports the converged specification into native simulator packages:
+- **ROS 2 Nav2**: Full Python launch package with DWA local planner parameters, costmap inflation layers, and lifecycle nodes.
+- **Webots**: Complete `.wbt` world file with solid physics nodes, differential wheels, and distance sensor slots.
+- **URDF**: Standard XML Robot Description Format specifying links, continuous revolute joints, and inertial tensors.
+- **PyBullet**: Standalone Python physics script ready for headless reinforcement learning or hardware-in-the-loop benchmarking.
+- **Engineering Audit Report**: Markdown compliance documentation detailing requirement verification matrices and iteration Pareto frontiers.
+
+---
+
+## 9. Project Structure
 
 ```
-d:\SimWeave\
+d:\SimWeave/
+├── .github/
+│   └── workflows/
+│       └── keep_alive.yml        # 24/7 Render keep-alive cron workflow
 ├── simweaver/
 │   ├── core/
 │   │   ├── eir_models.py         # Pydantic EIR models and validation
@@ -218,10 +276,12 @@ d:\SimWeave\
 ├── frontend/
 │   ├── src/
 │   │   ├── components/           # Control room UI components & 3D viewers
+│   │   ├── config.ts             # Dynamic API & WebSocket client resolver
 │   │   ├── types.ts              # TypeScript interfaces
 │   │   ├── App.tsx               # Main application layout
 │   │   └── main.tsx              # React entrypoint
 │   ├── package.json
+│   ├── vercel.json               # Vercel SPA rewrites
 │   ├── vite.config.ts
 │   └── tailwind.config.js
 ├── tests/
@@ -229,6 +289,9 @@ d:\SimWeave\
 │   ├── test_simulation.py        # Planner & physics tests
 │   ├── test_agents.py            # Multi-agent loop tests
 │   └── test_server.py            # FastAPI REST & WebSocket tests
+├── render.yaml                   # 1-click Render web service deployment blueprint
+├── Dockerfile                    # Container definition
+├── Procfile                      # Process configuration
 ├── run_tests.py                  # Test suite runner
 ├── requirements.txt              # Python dependencies
 ├── .gitignore                    # Git ignore rules
@@ -237,7 +300,7 @@ d:\SimWeave\
 
 ---
 
-## 8. Quickstart Guide
+## 10. Quickstart Guide
 
 ### Prerequisites
 - Python 3.10+
@@ -255,14 +318,14 @@ npm install
 cd ..
 ```
 
-### 3. Run Backend Verification Tests
+### 3. Run Automated Test Suite
 ```bash
-python run_tests.py
+python -m pytest -p no:hypothesis tests/test_eir.py tests/test_simulation.py
 ```
 
-### 4. Start Full Platform
+### 4. Start Full Platform Locally
 ```bash
 python start_simweaver.py
 ```
 
-Open your browser at `http://localhost:5173` to access the SimWeaver Engineering Control Room.
+Open your browser at `http://localhost:5173` to access the local SimWeaver Engineering Control Room, or visit the live production deployment at **[https://simweaver.vercel.app](https://simweaver.vercel.app)**.

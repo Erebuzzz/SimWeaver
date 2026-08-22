@@ -35,6 +35,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({
     { id: 'critic-perturbations', label: '7. Adversarial Critic' },
     { id: 'export-targets', label: '8. Multi-Simulator Code Synthesis' },
     { id: 'benchmarks', label: '9. Industrial Benchmarks' },
+    { id: 'deployment', label: '10. Cloud Deployment & MCP' },
   ];
 
   const overviewMermaid = `flowchart TD
@@ -520,6 +521,63 @@ constraints:
                   </div>
                   <span className="text-[10px] text-[var(--text-muted)]">6 Robots | 30x18m</span>
                 </div>
+              </div>
+            </section>
+
+            {/* Section 10: Cloud Deployment & MCP Integration */}
+            <section id="deployment" className="p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-4">
+              <div className="flex items-center gap-2 text-base font-bold text-[var(--text-primary)]">
+                <ExportSheetIcon className="w-4 h-4 text-emerald-400" />
+                10. Production Cloud Deployment & Model Context Protocol (MCP)
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                SimWeaver operates in production on a decoupled hybrid architecture: the React 18 / Three.js 3D viewport is distributed globally over Vercel Edge CDN, while the continuous kinematic ODE physics engine and live WebSocket gateway run on a dedicated Render web service.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-2">
+                  <div className="text-xs font-bold text-blue-400">Production Endpoints</div>
+                  <div className="space-y-1.5 text-[11px] font-mono">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">Frontend:</span>
+                      <a href="https://simweaver.vercel.app" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">simweaver.vercel.app</a>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">Backend API:</span>
+                      <a href="https://simweaver-api.onrender.com" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">simweaver-api.onrender.com</a>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--text-muted)]">Duplex WS:</span>
+                      <span className="text-amber-400">wss://simweaver-api.onrender.com/ws</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-2">
+                  <div className="text-xs font-bold text-purple-400">24/7 Keep-Alive Protection</div>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                    To eliminate Render free-tier idle shutdowns (15-min limit), SimWeaver uses a dual keep-alive loop: an internal FastAPI Lifespan self-ping every 10 minutes plus a GitHub Actions automated cron workflow.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-2">
+                <div className="text-xs font-bold text-amber-400 font-mono">MCP Configuration (Gemini / Claude / Cursor)</div>
+                <pre className="p-3 bg-[var(--bg-surface)] rounded text-[11px] font-mono text-[var(--text-secondary)] overflow-x-auto border border-[var(--border-subtle)]">
+{`{
+  "mcpServers": {
+    "vercel": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.vercel.com"]
+    },
+    "render": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.render.com/mcp", "--header", "Authorization: Bearer YOUR_RENDER_API_KEY"],
+      "env": { "RENDER_API_KEY": "YOUR_RENDER_API_KEY" }
+    }
+  }
+}`}
+                </pre>
               </div>
             </section>
           </main>
