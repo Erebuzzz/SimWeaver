@@ -1,38 +1,27 @@
 # SimWeaver Workflow Context
 
-**Project Status:** 100% COMPLETE - CLEAN PRODUCTION STATE
+**Project Status:** 100% COMPLETE - LIVE IN PRODUCTION
 **Date:** 2026-08-22
-**Remote Git Repository:** `https://github.com/Erebuzzz/SimWeaver.git`
-**Backend Server:** `http://127.0.0.1:8000` (FastAPI / WebSocket)
-**Frontend Control Room:** `http://localhost:5173` (Vite / React 18 / Tailwind / Three.js / Mermaid.js)
+**GitHub Repository:** `https://github.com/Erebuzzz/SimWeaver.git`
 
 ---
 
-## Production Deployment & Architecture Summary
+## Live Production Deployment URLs
 
-1. **Frontend (Vercel)**:
-   - Root: `frontend`
-   - Build: `npm run build`
-   - Config: `frontend/vercel.json` (SPA routing)
-   - Dynamic API: `frontend/src/config.ts` (`VITE_API_URL`)
-
-2. **Backend (Render / Railway / Docker)**:
-   - Config: `render.yaml`, `Dockerfile`, `Procfile`
-   - 24/7 Keep-Alive: FastAPI Lifespan internal self-ping + `.github/workflows/keep_alive.yml` (10-minute cron)
+- **Frontend (Vercel Edge Network):** [https://frontend-two-psi-90.vercel.app](https://frontend-two-psi-90.vercel.app)
+  - Secondary Alias: `https://frontend-rdajknpp5-unstable-kernel.vercel.app`
+  - Deployed via Vercel CLI with global CDN distribution
+- **Backend (Render Web Service):** [https://simweaver-api.onrender.com](https://simweaver-api.onrender.com)
+  - Health Endpoint: `https://simweaver-api.onrender.com/api/health` (HTTP 200 OK)
+  - Persistent Duplex WebSockets: `wss://simweaver-api.onrender.com/ws/simulation`
+  - Dashboard: `https://dashboard.render.com/web/srv-da4tlk740ujc73a1f5vg`
+- **24/7 Zero-Cold-Start Keep-Alive:**
+  - FastAPI Lifespan internal self-ping active every 10 minutes
+  - GitHub Actions cron workflow `.github/workflows/keep_alive.yml` active
 
 ---
 
-## Verification & Commands
+## Local Development Endpoints
 
-- **Run all automated tests:**
-  ```bash
-  python -m pytest -p no:hypothesis tests/test_eir.py tests/test_simulation.py
-  ```
-- **Start Full Local System:**
-  ```bash
-  python start_simweaver.py
-  ```
-- **Push to GitHub:**
-  ```bash
-  git push origin main
-  ```
+- **Backend Server:** `http://127.0.0.1:8000`
+- **Frontend Control Room:** `http://localhost:5173`
