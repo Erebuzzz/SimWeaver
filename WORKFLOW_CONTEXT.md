@@ -1,6 +1,6 @@
 # SimWeaver Workflow Context
 
-**Project Status:** 100% COMPLETE - 1-CLICK DEPLOYMENT ENGINE (VERCEL + RENDER/RAILWAY) PUSHED TO GITHUB
+**Project Status:** 100% COMPLETE - CLEAN PRODUCTION STATE
 **Date:** 2026-08-22
 **Remote Git Repository:** `https://github.com/Erebuzzz/SimWeaver.git`
 **Backend Server:** `http://127.0.0.1:8000` (FastAPI / WebSocket)
@@ -8,16 +8,17 @@
 
 ---
 
-## 1-Click Deployment Engine Configured
+## Production Deployment & Architecture Summary
 
-1. **Frontend on Vercel**:
-   - `frontend/vercel.json` added for clean SPA routing.
-   - Dynamic `getApiUrl` and `getWsUrl` in `frontend/src/config.ts` dynamically resolving `VITE_API_URL` and `VITE_WS_URL`.
+1. **Frontend (Vercel)**:
+   - Root: `frontend`
+   - Build: `npm run build`
+   - Config: `frontend/vercel.json` (SPA routing)
+   - Dynamic API: `frontend/src/config.ts` (`VITE_API_URL`)
 
-2. **Backend on Render / Railway / Fly.io / Docker**:
-   - `render.yaml` added for 1-click Render blueprint deployments.
-   - `Dockerfile` and `Procfile` added for container / Railway deployments.
-   - Preserves persistent WebSockets (`/ws/simulation`), continuous ODE physics state, and multi-agent optimization loops without timeout restrictions.
+2. **Backend (Render / Railway / Docker)**:
+   - Config: `render.yaml`, `Dockerfile`, `Procfile`
+   - 24/7 Keep-Alive: FastAPI Lifespan internal self-ping + `.github/workflows/keep_alive.yml` (10-minute cron)
 
 ---
 
@@ -25,7 +26,7 @@
 
 - **Run all automated tests:**
   ```bash
-  python run_tests.py
+  python -m pytest -p no:hypothesis tests/test_eir.py tests/test_simulation.py
   ```
 - **Start Full Local System:**
   ```bash
