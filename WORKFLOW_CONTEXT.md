@@ -1,23 +1,24 @@
 # SimWeaver Workflow Context
 
-**Project Status:** 100% COMPLETE - LIVE IN PRODUCTION
+**Project Status:** 100% COMPLETE - LIVE IN PRODUCTION WITH DEDICATED DOMAIN ALIASES
 **Date:** 2026-08-22
 **GitHub Repository:** `https://github.com/Erebuzzz/SimWeaver.git`
 
 ---
 
-## Live Production Deployment URLs
+## Live Production Deployment Endpoints
 
-- **Frontend (Vercel Edge Network):** [https://frontend-two-psi-90.vercel.app](https://frontend-two-psi-90.vercel.app)
-  - Secondary Alias: `https://frontend-rdajknpp5-unstable-kernel.vercel.app`
-  - Deployed via Vercel CLI with global CDN distribution
+- **Frontend (Vercel Production Domain):** [https://simweaver.vercel.app](https://simweaver.vercel.app)
+  - Direct Production Alias: [https://simweaver-omega.vercel.app](https://simweaver-omega.vercel.app)
+  - Deployment Host: `https://simweaver-610x523lv-unstable-kernel.vercel.app`
+  - Vercel Project: `unstable-kernel/simweaver`
 - **Backend (Render Web Service):** [https://simweaver-api.onrender.com](https://simweaver-api.onrender.com)
   - Health Endpoint: `https://simweaver-api.onrender.com/api/health` (HTTP 200 OK)
   - Persistent Duplex WebSockets: `wss://simweaver-api.onrender.com/ws/simulation`
-  - Dashboard: `https://dashboard.render.com/web/srv-da4tlk740ujc73a1f5vg`
-- **24/7 Zero-Cold-Start Keep-Alive:**
-  - FastAPI Lifespan internal self-ping active every 10 minutes
-  - GitHub Actions cron workflow `.github/workflows/keep_alive.yml` active
+  - Render Dashboard: `https://dashboard.render.com/web/srv-da4tlk740ujc73a1f5vg`
+- **24/7 Keep-Alive Automation:**
+  - FastAPI Lifespan self-ping every 10 minutes
+  - GitHub Actions cron workflow `.github/workflows/keep_alive.yml`
 
 ---
 
